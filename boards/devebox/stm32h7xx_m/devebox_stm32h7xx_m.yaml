@@ -1,0 +1,21 @@
+identifier: devebox_stm32h7xx_m
+name: DevEBox STM32H7XX M (STM32H743VIT6)
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+ram: 1024
+flash: 2048
+supported:
+  - gpio
+  - counter
+  - spi
+  - i2c
+  - backup_sram
+  - watchdog
+  - qspi
+  - sdhc
+  - video
+  - usb
+vendor: devebox

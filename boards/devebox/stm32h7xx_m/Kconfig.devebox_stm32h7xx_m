@@ -1,0 +1,5 @@
+# Copyright (c) 2026 Vishva
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_DEVEBOX_STM32H7XX_M
+	select SOC_STM32H743XX

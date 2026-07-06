@@ -1,0 +1,224 @@
+/*
+ * Copyright (c) 2026 Vishva
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/h7/stm32h743Xi.dtsi>
+#include <st/h7/stm32h743vitx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "DevEBox STM32H7XX M (STM32H743VIT6)";
+	compatible = "devebox,stm32h7xx-m";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		user_led: led {
+			/* D2, sink-driven: GPIO low = LED on */
+			gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+			label = "User LED";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		user_button_k1: button_0 {
+			label = "K1";
+			gpios = <&gpioe 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+
+		user_button_k2: button_1 {
+			label = "K2";
+			gpios = <&gpioc 5 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			zephyr,code = <INPUT_KEY_1>;
+		};
+	};
+
+	/*
+	 * TFT/LCD header (J4, 8-pin) is a bare SPI2 breakout with no
+	 * fixed panel soldered on -- the board supports various plug-in
+	 * OLED/TFT modules (0.96"-2.8"). No panel devicetree node is
+	 * defined here since the model is unknown; add your own
+	 * mipi-dbi/panel node under &spi2 once you know which module is
+	 * attached. D/C and backlight are exposed as plain GPIOs below.
+	 */
+	lcd_ctrl {
+		compatible = "gpio-leds"; /* reused as simple GPIO outputs */
+
+		lcd_dc: dc {
+			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+			label = "LCD D/C";
+		};
+
+		lcd_blk: blk {
+			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			label = "LCD Backlight";
+		};
+	};
+
+	aliases {
+		led0 = &user_led;
+		sw0 = &user_button_k1;
+		sw1 = &user_button_k2;
+		watchdog0 = &iwdg1;
+		sdhc0 = &sdmmc1;
+	};
+
+	dcmi_camera_connector: connector_dcmi_camera {
+		compatible = "devebox,dcmi-camera-connector";
+		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
+
+		gpio-map = <3 0 &gpiob 11 0>,  /* DCMI_SDA (I2C2_SDA) */
+			   <5 0 &gpiob 10 0>,  /* DCMI_SCL (I2C2_SCL) */
+			   <7 0 &gpiob 7 0>,   /* DCMI_VSYNC */
+			   <8 0 &gpioa 7 0>,   /* DCMI_PWDN */
+			   <9 0 &gpioa 4 0>,   /* DCMI_HREF (HSYNC) */
+			   <12 0 &gpioe 6 0>,  /* DCMI_D7 */
+			   <13 0 &gpioa 8 0>,  /* DCMI_XCLK (RCC_MCO1) */
+			   <14 0 &gpioe 5 0>,  /* DCMI_D6 */
+			   <16 0 &gpiod 3 0>,  /* DCMI_D5 */
+			   <17 0 &gpioa 6 0>,  /* DCMI_PCLK */
+			   <18 0 &gpioe 4 0>,  /* DCMI_D4 */
+			   <19 0 &gpioc 6 0>,  /* DCMI_D0 */
+			   <20 0 &gpioe 1 0>,  /* DCMI_D3 */
+			   <21 0 &gpioc 7 0>,  /* DCMI_D1 */
+			   <22 0 &gpioe 0 0>;  /* DCMI_D2 */
+			   /* DCMI_RESET (PC4) not part of this connector's
+			    * fixed pin count above; wire directly via &gpioc
+			    * if your camera module needs a reset line. */
+	};
+};
+
+&clk_lsi {
+	status = "okay";
+};
+
+&clk_hsi48 {
+	status = "okay";
+};
+
+&clk_hse {
+	clock-frequency = <DT_FREQ_M(25)>;
+	status = "okay";
+};
+
+&pll {
+	div-m = <5>;
+	mul-n = <96>;
+	div-p = <2>;
+	div-q = <10>;
+	div-r = <2>;
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(240)>;
+	d1cpre = <1>;
+	hpre = <2>;
+	d1ppre = <1>;
+	d2ppre1 = <1>;
+	d2ppre2 = <1>;
+	d3ppre = <1>;
+};
+
+&pwr {
+	power-supply = "ldo";
+};
+
+&sdmmc1 {
+	pinctrl-0 = <&sdmmc1_d0_pc8 &sdmmc1_d1_pc9
+		     &sdmmc1_d2_pc10 &sdmmc1_d3_pc11
+		     &sdmmc1_ck_pc12 &sdmmc1_cmd_pd2>;
+	pinctrl-names = "default";
+	/* Card-detect pin (microSD pin 9) is N.C. on this board --
+	 * no cd-gpios available, unlike mini_stm32h743. */
+	disk-name = "SD";
+	status = "okay";
+};
+
+zephyr_udc0: &usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+#include <../boards/common/usb/cdc_acm_serial.dtsi>
+
+&quadspi {
+	pinctrl-names = "default";
+	pinctrl-0 = <&quadspi_clk_pb2 &quadspi_bk1_ncs_pb6
+		     &quadspi_bk1_io0_pd11 &quadspi_bk1_io1_pd12
+		     &quadspi_bk1_io2_pe2 &quadspi_bk1_io3_pd13>;
+	flash-id = <1>;
+	status = "okay";
+
+	w25q64_qspi: qspi-nor-flash@0 {
+		compatible = "st,stm32-qspi-nor";
+		reg = <0>;
+		size = <DT_SIZE_M(64)>; /* 64 Mbit = 8 MiB, W25Q64JV */
+		qspi-max-frequency = <40000000>;
+		cs-high-time = <2>; /* >= 50 ns */
+		status = "okay";
+		spi-bus-width = <4>;
+		writeoc = "PP_1_1_4";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			slot0_partition: partition@0 {
+				reg = <0x00000000 DT_SIZE_M(8)>;
+			};
+		};
+	};
+};
+
+/* LCD header (J4) breakout -- SPI2, CS/D-C/BLK as plain GPIOs.
+ * No panel node here; see comment on lcd_ctrl above. */
+&spi2 {
+	pinctrl-0 = <&spi2_sck_pb13 &spi2_miso_pb14 &spi2_mosi_pb15>;
+	cs-gpios = <&gpiob 12 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&rng {
+	status = "okay";
+};
+
+&backup_sram {
+	status = "okay";
+};
+
+&iwdg1 {
+	status = "okay";
+};
+
+zephyr_camera_i2c: &i2c2 {
+	pinctrl-0 = <&i2c2_scl_pb10 &i2c2_sda_pb11>;
+	pinctrl-names = "default";
+	scl-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpiob 11 GPIO_ACTIVE_HIGH>;
+};
+
+zephyr_camera_dvp: &dcmi {
+	pinctrl-0 = <&dcmi_hsync_pa4 &dcmi_pixclk_pa6 &dcmi_vsync_pb7
+		     &dcmi_d0_pc6 &dcmi_d1_pc7 &dcmi_d2_pe0 &dcmi_d3_pe1
+		     &dcmi_d4_pe4 &dcmi_d5_pd3 &dcmi_d6_pe5 &dcmi_d7_pe6>;
+	pinctrl-names = "default";
+};

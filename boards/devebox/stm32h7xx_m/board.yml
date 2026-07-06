@@ -1,0 +1,9 @@
+board:
+  name: devebox_stm32h7xx_m
+  full_name: DevEBox STM32H7xx M
+  vendor: others
+  socs:
+    - name: stm32h743xx
+
+
+
