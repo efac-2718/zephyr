@@ -439,6 +439,7 @@ maxim	Maxim Integrated Products
 maxlinear	Maxlinear, Inc.
 mbvl	Mobiveil Inc.
 mcube	mCube
+mcudev    MCUDev
 meas	Measurement Specialties
 mecer	Mustek Limited
 mediatek	MediaTek Inc.
@@ -847,5 +848,5 @@ zinitix	Zinitix Co., Ltd
 zkmagic	Shenzhen Zkmagic Technology Co., Ltd.
 zte	ZTE Corp.
 zyxel	ZyXEL Communications Corp.
-MCUDev	DevEBox
+mcudev	DevEBox
 # zephyr-keep-sorted-stop
